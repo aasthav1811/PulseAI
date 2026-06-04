@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # ─── Model config ─────────────────────────────────────────────────────────
 MODEL_ID = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-FALLBACK_MODE = True  # Set True to skip transformer download
+FALLBACK_MODE = False  # Set True to skip transformer download
 
 # ─── Aspect keywords for aspect-based sentiment ───────────────────────────
 ASPECT_KEYWORDS = {

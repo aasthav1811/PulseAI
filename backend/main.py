@@ -56,7 +56,7 @@ def _bootstrap() -> None:
     t0 = time.time()
 
     # Generate posts
-    _corpus = generate_posts(n=200)
+    _corpus = generate_posts(n=400)
     texts = [p["text"] for p in _corpus]
 
     # ── Sentiment analysis ────────────────────────────────────────────
