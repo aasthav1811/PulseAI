@@ -1,3 +1,13 @@
+---
+title: PulseAI
+emoji: 🦀
+colorFrom: green
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+
 # 🚀 Social Intelligence Platform
 
 **AI-powered brand monitoring, sentiment analysis, and competitive intelligence**
@@ -489,3 +499,6 @@ MIT License — Free to use for educational and portfolio purposes.
 ---
 
 **Built with:** 🐍 Python • ⚡ FastAPI • 🤗 Transformers • 📊 Chart.js • 🎨 Custom CSS
+
+
+
