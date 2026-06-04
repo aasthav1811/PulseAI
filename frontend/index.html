@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseAI — Social Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg-void: #080b12;
+  --bg-base: #0d1117;
+  --bg-surface: #111827;
+  --bg-elevated: #161f2e;
+  --bg-overlay: #1a2535;
+
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-default: rgba(255,255,255,0.09);
+  --border-strong: rgba(255,255,255,0.15);
+
+  --text-primary: #f0f4ff;
+  --text-secondary: #8b9ab4;
+  --text-tertiary: #4a5568;
+  --text-accent: #5b9cf6;
+
+  --blue-500: #5b9cf6;
+  --blue-400: #7db3f8;
+  --blue-300: #a5c8fb;
+  --blue-glow: rgba(91,156,246,0.15);
+
+  --amber-500: #f59e0b;
+  --amber-400: #fbbf24;
+  --amber-glow: rgba(245,158,11,0.15);
+
+  --green-500: #10b981;
+  --green-400: #34d399;
+  --green-glow: rgba(16,185,129,0.12);
+
+  --red-500: #ef4444;
+  --red-400: #f87171;
+  --red-glow: rgba(239,68,68,0.12);
+
+  --purple-500: #8b5cf6;
+  --purple-400: #a78bfa;
+
+  --cyan-500: #06b6d4;
+  --cyan-400: #22d3ee;
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --sidebar-w: 240px;
+  --header-h: 60px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-void);
+  color: var(--text-primary);
+  height: 100%;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.5;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea { font-family: inherit; }
+
+/* Noise overlay for depth */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════════════ */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--header-h) 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Header ──────────────────────────────────────────────── */
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--blue-500) 0%, var(--purple-500) 100%);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 0 20px var(--blue-glow);
+}
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--blue-500);
+  background: var(--blue-glow);
+  border: 1px solid rgba(91,156,246,0.2);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  width: 320px;
+}
+.search-icon { color: var(--text-tertiary); flex-shrink: 0; }
+.header-search {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  width: 100%;
+  font-size: 13px;
+  outline: none;
+}
+.header-search::placeholder { color: var(--text-tertiary); }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--green-400);
+  background: var(--green-glow);
+  border: 1px solid rgba(16,185,129,0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green-400);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue-500), var(--purple-500));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  background: var(--bg-base);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  overflow: hidden;
+}
+
+.nav-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  padding: 8px 20px 4px;
+  margin-top: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  position: relative;
+}
+.nav-item:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.nav-item.active {
+  background: var(--blue-glow);
+  color: var(--blue-400);
+  border: 1px solid rgba(91,156,246,0.15);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 2px; height: 60%;
+  background: var(--blue-500);
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+
+.nav-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--red-glow);
+  color: var(--red-400);
+  border: 1px solid rgba(239,68,68,0.2);
+}
+.nav-badge.blue {
+  background: var(--blue-glow);
+  color: var(--blue-400);
+  border-color: rgba(91,156,246,0.2);
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.sidebar-brand-select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.brand-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ─── Main Content ────────────────────────────────────────── */
+.main {
+  overflow-y: auto;
+  background: var(--bg-void);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
+}
+.main::-webkit-scrollbar { width: 4px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+
+.view { display: none; padding: 24px; }
+.view.active { display: block; }
+
+/* ─── Page Header ─────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.header-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+.btn-ghost {
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+  background: transparent;
+}
+.btn-ghost:hover { background: var(--bg-surface); color: var(--text-primary); }
+.btn-primary {
+  background: var(--blue-500);
+  color: white;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 20px var(--blue-glow);
+}
+.btn-primary:hover { background: var(--blue-400); box-shadow: 0 0 30px var(--blue-glow); }
+
+/* ═══════════════════════════════════════════════════════════
+   GRID & CARDS
+═══════════════════════════════════════════════════════════ */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 20px; }
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+.card:hover { border-color: var(--border-default); }
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ─── KPI Cards ───────────────────────────────────────────── */
+.kpi-card {
+  padding: 18px 20px;
+}
+.kpi-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.kpi-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.delta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.delta.pos { color: var(--green-400); background: var(--green-glow); }
+.delta.neg { color: var(--red-400); background: var(--red-glow); }
+.delta.neu { color: var(--amber-400); background: var(--amber-glow); }
+
+.kpi-accent {
+  position: absolute;
+  top: 0; right: 0;
+  width: 60px; height: 60px;
+  border-radius: 0 14px 0 60px;
+  opacity: 0.08;
+}
+
+/* ─── Card headers ────────────────────────────────────────── */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.card-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-overlay);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-default);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SENTIMENT GAUGE
+═══════════════════════════════════════════════════════════ */
+.sentiment-gauge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.gauge-svg { flex-shrink: 0; }
+.gauge-legend { flex: 1; }
+.gauge-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.gauge-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.gauge-item-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+.gauge-item-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHART CONTAINERS
+═══════════════════════════════════════════════════════════ */
+.chart-wrap {
+  position: relative;
+  height: 220px;
+}
+.chart-wrap-sm { height: 160px; }
+.chart-wrap-lg { height: 280px; }
+
+/* ═══════════════════════════════════════════════════════════
+   TOPIC CLUSTERS
+═══════════════════════════════════════════════════════════ */
+#topic-bubble-svg {
+  width: 100%;
+  overflow: visible;
+}
+.topic-bubble { cursor: pointer; transition: opacity 0.2s; }
+.topic-bubble:hover { opacity: 0.85; }
+
+.topic-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.topic-chip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.topic-chip:hover { border-color: var(--border-strong); background: var(--bg-overlay); }
+.topic-chip.selected { border-color: var(--blue-500); background: var(--blue-glow); }
+.topic-chip-name {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+.topic-chip-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topic-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.topic-sentiment-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-void);
+  flex: 1;
+  overflow: hidden;
+}
+.topic-sentiment-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CRISIS PANEL
+═══════════════════════════════════════════════════════════ */
+.crisis-alert {
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+.crisis-alert.critical { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.2); }
+.crisis-alert.high { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.2); }
+.crisis-alert.medium { background: rgba(16,185,129,0.04); border-color: rgba(16,185,129,0.15); }
+.crisis-alert.low { background: var(--bg-elevated); border-color: var(--border-subtle); }
+
+.crisis-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.crisis-content { flex: 1; min-width: 0; }
+.crisis-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+.crisis-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crisis-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+.crisis-score {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.crisis-score.critical { color: var(--red-400); }
+.crisis-score.high { color: var(--amber-400); }
+.crisis-score.medium { color: var(--green-400); }
+
+/* ═══════════════════════════════════════════════════════════
+   COMPETITOR COMPARISON
+═══════════════════════════════════════════════════════════ */
+.competitor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.competitor-row:last-child { border-bottom: none; }
+.competitor-name {
+  font-weight: 600;
+  font-size: 13px;
+  width: 90px;
+  flex-shrink: 0;
+}
+.competitor-name.own { color: var(--blue-400); }
+.comp-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.comp-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+.comp-score {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.comp-trend {
+  font-size: 11px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   POST FEED
+═══════════════════════════════════════════════════════════ */
+.post-feed { max-height: 420px; overflow-y: auto; }
+.post-feed::-webkit-scrollbar { width: 3px; }
+.post-feed::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+
+.post-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: default;
+  transition: all 0.15s ease;
+}
+.post-item:hover { padding-left: 6px; }
+.post-item:last-child { border-bottom: none; }
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.post-source {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-overlay);
+  color: var(--text-tertiary);
+}
+.sentiment-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.sentiment-pill.positive { background: var(--green-glow); color: var(--green-400); }
+.sentiment-pill.negative { background: var(--red-glow); color: var(--red-400); }
+.sentiment-pill.neutral { background: var(--bg-overlay); color: var(--text-tertiary); }
+.sentiment-pill.crisis { background: rgba(239,68,68,0.15); color: var(--red-400); }
+
+.post-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.post-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE ANALYZER
+═══════════════════════════════════════════════════════════ */
+.analyzer-textarea {
+  width: 100%;
+  min-height: 100px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+.analyzer-textarea:focus { border-color: var(--blue-500); }
+.analyzer-textarea::placeholder { color: var(--text-tertiary); }
+
+.analyzer-result {
+  display: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 12px;
+  animation: slideUp 0.3s ease;
+}
+.analyzer-result.visible { display: block; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.result-sentiment-badge {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+}
+.result-confidence {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.aspect-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.aspect-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.aspect-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 3px;
+}
+.aspect-sentiment {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING STATE
+═══════════════════════════════════════════════════════════ */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  gap: 20px;
+  transition: opacity 0.5s ease;
+}
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loading-logo {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--blue-400) 0%, var(--purple-400) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.loading-bar-wrap {
+  width: 200px;
+  height: 2px;
+  background: var(--bg-surface);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.loading-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue-500), var(--purple-500));
+  border-radius: 1px;
+  animation: loadBar 2s ease infinite;
+}
+@keyframes loadBar {
+  0% { width: 0%; margin-left: 0; }
+  50% { width: 60%; }
+  100% { width: 0%; margin-left: 100%; }
+}
+.loading-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS & TRANSITIONS
+═══════════════════════════════════════════════════════════ */
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger > * { opacity: 0; animation: fadeIn 0.4s ease forwards; }
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger > *:nth-child(8) { animation-delay: 0.40s; }
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════════════ */
+* { scrollbar-width: thin; scrollbar-color: var(--border-default) transparent; }
+
+/* ═══════════════════════════════════════════════════════════
+   OPPORTUNITY CARDS
+═══════════════════════════════════════════════════════════ */
+.opportunity-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.opportunity-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--amber-500);
+  border-radius: 3px 0 0 3px;
+}
+.opportunity-card.high::before { background: var(--blue-500); }
+.opp-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber-400);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.opp-tag.high { color: var(--blue-400); }
+.opp-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.opp-action { font-size: 11px; color: var(--text-primary); margin-top: 6px; font-weight: 500; }
+
+/* Source badges */
+.source-badge-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.source-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.source-badge:hover, .source-badge.active { background: var(--blue-glow); border-color: var(--blue-500); color: var(--blue-400); }
+
+/* ═══════════════════════════════════════════════════════════
+   MINI SPARKLINES  
+═══════════════════════════════════════════════════════════ */
+.mini-spark { display: block; overflow: visible; }
+</style>
+</head>
+
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">PulseAI</div>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar"></div>
+  </div>
+  <div class="loading-text" id="loadingText">Connecting to intelligence engine...</div>
+</div>
+
+<div class="app-shell">
+
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-mark">⚡</div>
+      <span class="logo-text">PulseAI</span>
+      <span class="logo-tag">BETA</span>
+    </div>
+    <div class="header-center">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="header-search" type="text" placeholder="Search posts, topics, keywords…" />
+    </div>
+    <div class="header-actions">
+      <div class="status-pill"><div class="status-dot"></div><span id="modelMode">Loading…</span></div>
+      <div class="avatar">AK</div>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ───────────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="nav-section-label">Overview</div>
+    <div class="nav-item active" onclick="showView('dashboard', this)">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showView('trends', this)">
+      <span class="nav-icon">◷</span> Trends
+    </div>
+
+    <div class="nav-section-label">Intelligence</div>
+    <div class="nav-item" onclick="showView('topics', this)">
+      <span class="nav-icon">⬡</span> Topic Clusters
+      <span class="nav-badge blue" id="topicCount">—</span>
+    </div>
+    <div class="nav-item" onclick="showView('crisis', this)">
+      <span class="nav-icon">◉</span> Crisis Radar
+      <span class="nav-badge" id="crisisBadge">—</span>
+    </div>
+    <div class="nav-item" onclick="showView('competitors', this)">
+      <span class="nav-icon">◎</span> Competitors
+    </div>
+
+    <div class="nav-section-label">Tools</div>
+    <div class="nav-item" onclick="showView('analyzer', this)">
+      <span class="nav-icon">⬙</span> Live Analyzer
+    </div>
+    <div class="nav-item" onclick="showView('feed', this)">
+      <span class="nav-icon">≡</span> Post Feed
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-brand-select">
+        <div class="brand-label">Monitoring</div>
+        <div class="brand-name">
+          TechFlow
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+     MAIN CONTENT
+  ════════════════════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: DASHBOARD
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-dashboard" class="view active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Brand Intelligence Dashboard</div>
+          <div class="page-subtitle">Real-time sentiment, trends, and competitive signals for TechFlow</div>
+        </div>
+        <div class="header-actions-row">
+          <button class="btn btn-ghost">↓ Export</button>
+          <button class="btn btn-primary">+ Add Source</button>
+        </div>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="grid-4 stagger" id="kpiRow">
+        <div class="card kpi-card">
+          <div class="kpi-label">Brand Sentiment</div>
+          <div class="kpi-value" id="kpi-sentiment" style="color:var(--green-400)">—</div>
+          <div class="kpi-sub">
+            <span class="delta pos" id="kpi-sentiment-delta">—</span>
+            <span>vs 30-day avg</span>
+          </div>
+          <div class="kpi-accent" style="background:var(--green-500)"></div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Post Volume</div>
+          <div class="kpi-value" id="kpi-volume" style="color:var(--blue-400)">—</div>
+          <div class="kpi-sub">
+            <span class="delta neu" id="kpi-vol-trend">—</span>
+            <span>volume trend</span>
+          </div>
+          <div class="kpi-accent" style="background:var(--blue-500)"></div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Net Promoter (est.)</div>
+          <div class="kpi-value" id="kpi-nps" style="color:var(--amber-400)">—</div>
+          <div class="kpi-sub">
+            <span class="delta pos" id="kpi-nps-sub">—</span>
+            <span>positive posts</span>
+          </div>
+          <div class="kpi-accent" style="background:var(--amber-500)"></div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Crisis Alert</div>
+          <div class="kpi-value" id="kpi-crisis" style="color:var(--red-400); font-size:20px;">—</div>
+          <div class="kpi-sub">
+            <span class="delta neg" id="kpi-crisis-count">—</span>
+            <span>active signals</span>
+          </div>
+          <div class="kpi-accent" style="background:var(--red-500)"></div>
+        </div>
+      </div>
+
+      <!-- Trend + Sentiment Donut -->
+      <div class="grid-3-1">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Sentiment Trend — 90 Days</span>
+            <span class="card-tag" id="trendTag">—</span>
+          </div>
+          <div class="chart-wrap-lg">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Sentiment Mix</span>
+            <span class="card-tag">Last 30d</span>
+          </div>
+          <div class="sentiment-gauge-wrap" style="margin-top: 10px;">
+            <canvas id="sentimentDonut" width="130" height="130" class="gauge-svg"></canvas>
+            <div class="gauge-legend" id="sentimentLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sources + Top Crisis Posts -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Volume by Source</span>
+            <span class="card-tag">All time</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="sourceChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔴 Top Crisis Signals</span>
+            <span class="card-tag" id="crisisAlertLevel">—</span>
+          </div>
+          <div id="topCrisisList"></div>
+        </div>
+      </div>
+
+      <!-- Recent Posts -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Posts</span>
+          <div class="source-badge-row" id="filterBadges">
+            <span class="source-badge active" onclick="filterPosts(null, this)">All</span>
+            <span class="source-badge" onclick="filterPosts('positive', this)">Positive</span>
+            <span class="source-badge" onclick="filterPosts('negative', this)">Negative</span>
+            <span class="source-badge" onclick="filterPosts('crisis', this)">Crisis</span>
+          </div>
+        </div>
+        <div class="post-feed" id="postFeed"></div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: TRENDS
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-trends" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Trend Analysis & Forecasting</div>
+          <div class="page-subtitle">Sentiment momentum, anomaly detection, and 14-day forecast</div>
+        </div>
+      </div>
+
+      <div class="grid-4 stagger" id="trendKpis">
+        <div class="card kpi-card">
+          <div class="kpi-label">7-Day Avg Sentiment</div>
+          <div class="kpi-value" id="t-kpi-7d" style="color:var(--blue-400)">—</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">30-Day Avg Sentiment</div>
+          <div class="kpi-value" id="t-kpi-30d" style="color:var(--text-secondary)">—</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Trend Direction</div>
+          <div class="kpi-value" id="t-kpi-dir" style="font-size:14px; padding-top:8px;">—</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Anomalies Detected</div>
+          <div class="kpi-value" id="t-kpi-anomalies" style="color:var(--amber-400)">—</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">Sentiment Timeline + Forecast (14-Day)</span>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary)"><span style="width:16px;height:2px;background:var(--blue-500);display:inline-block;border-radius:2px;"></span>Actual</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary)"><span style="width:16px;height:2px;background:var(--purple-500);display:inline-block;border-radius:2px;border-top:2px dashed var(--purple-500);"></span>Forecast</span>
+          </div>
+        </div>
+        <div class="chart-wrap-lg">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Volume Trend</span>
+            <span class="card-tag">Daily posts</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="volumeChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Anomalies Detected</span>
+            <span class="card-tag">Statistical outliers</span>
+          </div>
+          <div id="anomalyList" style="max-height:220px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: TOPIC CLUSTERS
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-topics" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Topic Intelligence</div>
+          <div class="page-subtitle">NMF-powered topic discovery across all customer conversations</div>
+        </div>
+        <div class="header-actions-row">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)">Model: NMF + TF-IDF</span>
+        </div>
+      </div>
+
+      <div class="grid-1-2" style="align-items:start;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Topic Clusters</span>
+            <span class="card-tag" id="topicTotalPosts">—</span>
+          </div>
+          <div class="topic-card-grid" id="topicChips"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Cluster Distribution</span>
+            <span class="card-tag">Bubble = post volume</span>
+          </div>
+          <svg id="topic-bubble-svg" height="340"></svg>
+        </div>
+      </div>
+
+      <div class="card" id="topicDetailCard" style="display:none;">
+        <div class="card-header">
+          <span class="card-title" id="topicDetailName">—</span>
+          <span class="card-tag" id="topicDetailCount">—</span>
+        </div>
+        <div class="grid-2" style="margin-bottom:0;">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-tertiary);margin-bottom:10px;">Top Keywords</div>
+            <div id="topicKeywords" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-tertiary);margin-bottom:10px;">Sample Posts</div>
+            <div id="topicExamples"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: CRISIS RADAR
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-crisis" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Crisis Radar</div>
+          <div class="page-subtitle">Multi-signal brand crisis detection and escalation intelligence</div>
+        </div>
+      </div>
+
+      <div class="grid-4 stagger">
+        <div class="card kpi-card">
+          <div class="kpi-label">Overall Alert Level</div>
+          <div class="kpi-value" id="c-overall" style="font-size:18px;padding-top:4px;">—</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Crisis Posts</div>
+          <div class="kpi-value" id="c-total" style="color:var(--red-400)">—</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Active High-Severity</div>
+          <div class="kpi-value" id="c-active" style="color:var(--amber-400)">—</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-label">Top Signal</div>
+          <div class="kpi-value" id="c-top-signal" style="font-size:14px;padding-top:8px;">—</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Active Crisis Posts</span>
+            <span class="card-tag">By severity</span>
+          </div>
+          <div id="crisisList" style="max-height:360px;overflow-y:auto;"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Signal Frequency</span>
+            <span class="card-tag">Crisis categories</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="signalChart"></canvas>
+          </div>
+          <div style="margin-top:16px;">
+            <div class="card-header" style="margin-bottom:8px;">
+              <span class="card-title">Recommended Actions</span>
+            </div>
+            <div id="crisisActions"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: COMPETITORS
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-competitors" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Competitive Intelligence</div>
+          <div class="page-subtitle">Competitor sentiment, share of voice, and opportunity signals</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="align-items:start;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Sentiment Comparison</span>
+            <span class="card-tag">Score = % positive mentions</span>
+          </div>
+          <div id="competitorRows" style="margin-top:8px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Share of Voice</span>
+            <span class="card-tag">% of corpus mentions</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="sovChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">💡 Opportunity Intelligence</span>
+          <span class="card-tag">AI-identified gaps</span>
+        </div>
+        <div id="opportunityList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: LIVE ANALYZER
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-analyzer" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Live Text Analyzer</div>
+          <div class="page-subtitle">Real-time BERT-powered sentiment, aspect, and crisis scoring</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="align-items:start;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Analyze Text</span>
+            <span class="card-tag" id="analyzerModelBadge">—</span>
+          </div>
+          <textarea class="analyzer-textarea" id="analyzerInput" placeholder="Paste a customer review, tweet, or support ticket here…
+
+Example: The dashboard is beautiful but loading times are painfully slow. Considering switching to a competitor if this isn't fixed soon."></textarea>
+          <button class="btn btn-primary" onclick="runAnalysis()" style="width:100%;justify-content:center;" id="analyzeBtn">
+            ⚡ Analyze
+          </button>
+          <div class="analyzer-result" id="analyzerResult">
+            <div class="result-label">
+              <span class="result-sentiment-badge" id="resultBadge">—</span>
+              <span class="result-confidence" id="resultConf">—</span>
+            </div>
+            <div id="crisisResultBox"></div>
+            <div>
+              <div style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-tertiary);margin-bottom:8px;margin-top:12px;">Detected Aspects</div>
+              <div class="aspect-grid" id="aspectGrid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Quick Examples</span>
+          </div>
+          <div id="exampleList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────
+         VIEW: POST FEED
+    ─────────────────────────────────────────────────────── -->
+    <div id="view-feed" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Post Feed</div>
+          <div class="page-subtitle">All monitored posts with sentiment and topic labels</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="source-badge-row">
+            <span class="source-badge active" onclick="filterFeedPosts(null, this)">All</span>
+            <span class="source-badge" onclick="filterFeedPosts('positive', this)">✓ Positive</span>
+            <span class="source-badge" onclick="filterFeedPosts('negative', this)">✗ Negative</span>
+            <span class="source-badge" onclick="filterFeedPosts('neutral', this)">— Neutral</span>
+            <span class="source-badge" onclick="filterFeedPosts('crisis', this)">⚠ Crisis</span>
+          </div>
+        </div>
+        <div class="post-feed" id="fullPostFeed" style="max-height:600px;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL STATE & CONFIG
+═══════════════════════════════════════════════════════════ */
+const API = 'http://localhost:8000/api';
+let _data = null;
+let _posts = [];
+let _currentFilter = null;
+let _charts = {};
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════ */
+function showView(viewId, navEl) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`view-${viewId}`).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATA LOADING
+═══════════════════════════════════════════════════════════ */
+async function loadDashboard() {
+  const loadingTexts = [
+    'Connecting to intelligence engine...',
+    'Running BERT sentiment pipeline...',
+    'Fitting topic model (NMF)...',
+    'Analyzing competitor signals...',
+    'Running crisis detection scan...',
+    'Building trend forecasts...',
+    'Assembling dashboard...'
+  ];
+
+  let ti = 0;
+  const loadEl = document.getElementById('loadingText');
+  const loadInterval = setInterval(() => {
+    ti = (ti + 1) % loadingTexts.length;
+    loadEl.textContent = loadingTexts[ti];
+  }, 1800);
+
+  try {
+    // Poll until backend is ready
+    let ready = false;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      try {
+        const health = await fetch(`${API}/health`);
+        const hd = await health.json();
+        if (hd.initialized) { ready = true; break; }
+      } catch {}
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    if (!ready) throw new Error('Backend timeout');
+
+    const [dashRes, postsRes] = await Promise.all([
+      fetch(`${API}/dashboard`),
+      fetch(`${API}/posts?limit=200`),
+    ]);
+
+    _data = await dashRes.json();
+    const postsData = await postsRes.json();
+    _posts = postsData.posts;
+
+    clearInterval(loadInterval);
+    renderAll();
+
+    setTimeout(() => {
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }, 500);
+
+  } catch (err) {
+    clearInterval(loadInterval);
+    // Show demo data if backend unavailable
+    loadEl.textContent = 'Backend offline — showing demo data';
+    _data = getDemoData();
+    _posts = getDemoPosts();
+    renderAll();
+    setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 1500);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER ORCHESTRATOR
+═══════════════════════════════════════════════════════════ */
+function renderAll() {
+  const s = _data.summary;
+  const meta = _data.meta || {};
+
+  document.getElementById('modelMode').textContent = (meta.model_mode || 'demo') + ' mode';
+
+  renderKPIs(s);
+  renderTrendChart();
+  renderSentimentDonut(s);
+  renderSourceChart();
+  renderTopCrisis();
+  renderPostFeed();
+  renderTrendsView();
+  renderTopicsView();
+  renderCrisisView();
+  renderCompetitorView();
+  renderAnalyzerView();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPIs
+═══════════════════════════════════════════════════════════ */
+function renderKPIs(s) {
+  document.getElementById('kpi-sentiment').textContent = pct(s.overall_sentiment);
+  const delta = s.delta || 0;
+  const dEl = document.getElementById('kpi-sentiment-delta');
+  dEl.textContent = (delta >= 0 ? '+' : '') + pct(delta);
+  dEl.className = `delta ${delta >= 0 ? 'pos' : 'neg'}`;
+
+  document.getElementById('kpi-volume').textContent = fmt(s.total_volume);
+  const volEl = document.getElementById('kpi-vol-trend');
+  const vt = s.volume_trend || _data.trends?.trend?.volume_trend || 'stable';
+  volEl.textContent = { growing: '↑ Growing', shrinking: '↓ Shrinking', stable: '→ Stable' }[vt] || vt;
+  volEl.className = `delta ${vt === 'growing' ? 'pos' : vt === 'shrinking' ? 'neg' : 'neu'}`;
+
+  document.getElementById('kpi-nps').textContent = s.nps_estimate > 0 ? '+' + s.nps_estimate : s.nps_estimate;
+  document.getElementById('kpi-nps-sub').textContent = `${s.positive_pct}%`;
+
+  const alertMap = { low:'🟢 LOW', medium:'🟡 MEDIUM', high:'🟠 HIGH', critical:'🔴 CRITICAL' };
+  document.getElementById('kpi-crisis').textContent = alertMap[s.crisis_alert] || s.crisis_alert?.toUpperCase();
+  document.getElementById('kpi-crisis-count').textContent = `${_data.crisis?.active_crises || 0} high+`;
+
+  // Update badge
+  const cb = document.getElementById('crisisBadge');
+  const ca = _data.crisis?.active_crises || 0;
+  cb.textContent = ca;
+  if (s.crisis_alert === 'high' || s.crisis_alert === 'critical') cb.style.background = 'rgba(239,68,68,0.15)';
+
+  document.getElementById('topicCount').textContent = _data.topics?.length || '—';
+  document.getElementById('crisisAlertLevel').textContent = (s.crisis_alert || 'low').toUpperCase();
+  document.getElementById('trendTag').textContent = (_data.trends?.trend?.direction || '—').toUpperCase();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════════════════════ */
+const chartDefaults = {
+  plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+  scales: {},
+  animation: { duration: 800, easing: 'easeOutQuart' },
+};
+
+function getCtx(id) { return document.getElementById(id)?.getContext('2d'); }
+
+function destroyChart(id) {
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+}
+
+function renderTrendChart() {
+  destroyChart('trendChart');
+  const series = _data.trends?.time_series || [];
+  if (!series.length) return;
+
+  const ctx = getCtx('trendChart');
+  _charts.trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: series.map(d => d.date),
+      datasets: [{
+        label: 'Sentiment',
+        data: series.map(d => (d.sentiment * 100).toFixed(1)),
+        borderColor: '#5b9cf6',
+        backgroundColor: createGradient(ctx, '#5b9cf6', 0.15, 0.01),
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        mode: 'index', intersect: false,
+        callbacks: { label: c => ` Sentiment: ${c.raw}%` }
+      }},
+      scales: {
+        x: { type: 'time', time: { unit: 'week' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 } } },
+        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 }, callback: v => v + '%' } }
+      }
+    }
+  });
+}
+
+function createGradient(ctx, color, alphaTop, alphaBottom) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+  gradient.addColorStop(0, color + Math.round(alphaTop * 255).toString(16).padStart(2,'0'));
+  gradient.addColorStop(1, color + Math.round(alphaBottom * 255).toString(16).padStart(2,'0'));
+  return gradient;
+}
+
+function renderSentimentDonut(s) {
+  destroyChart('sentimentDonut');
+  const ctx = getCtx('sentimentDonut');
+  const pos = s.positive_count || 0, neg = s.negative_count || 0, neu = s.neutral_count || 0;
+  _charts.sentimentDonut = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive', 'Negative', 'Neutral'],
+      datasets: [{ data: [pos, neg, neu], backgroundColor: ['#10b981', '#ef4444', '#4a5568'], borderWidth: 0, borderRadius: 3, spacing: 2 }]
+    },
+    options: {
+      responsive: false, cutout: '70%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ${fmt(c.raw)}` } } }
+    }
+  });
+
+  const total = pos + neg + neu;
+  document.getElementById('sentimentLegend').innerHTML = [
+    { label: 'Positive', count: pos, color: '#10b981' },
+    { label: 'Negative', count: neg, color: '#ef4444' },
+    { label: 'Neutral', count: neu, color: '#4a5568' },
+  ].map(i => `
+    <div class="gauge-item">
+      <div class="gauge-dot" style="background:${i.color}"></div>
+      <span class="gauge-item-label">${i.label}</span>
+      <span class="gauge-item-val">${fmt(i.count)} <span style="color:var(--text-tertiary);font-size:10px;">${pct(i.count/total)}</span></span>
+    </div>
+  `).join('');
+}
+
+function renderSourceChart() {
+  destroyChart('sourceChart');
+  const ctx = getCtx('sourceChart');
+  const sources = {};
+  _posts.forEach(p => { sources[p.source] = (sources[p.source] || 0) + 1; });
+  const sorted = Object.entries(sources).sort((a,b) => b[1]-a[1]);
+  const colors = ['#5b9cf6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ef4444'];
+  _charts.sourceChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(s => s[0]),
+      datasets: [{ data: sorted.map(s => s[1]), backgroundColor: colors, borderRadius: 4, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw} posts` } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: '#8b9ab4', font: { size: 12 } } }
+      }
+    }
+  });
+}
+
+function renderTopCrisis() {
+  const posts = _data.crisis?.top_crisis_posts?.slice(0, 4) || [];
+  document.getElementById('topCrisisList').innerHTML = posts.map(p => {
+    const lvl = p.alert_level || 'medium';
+    return `<div class="crisis-alert ${lvl}">
+      <div class="crisis-icon">${{critical:'🔴',high:'🟠',medium:'🟡',low:'🟢'}[lvl]||'🟡'}</div>
+      <div class="crisis-content">
+        <div class="crisis-title">${p.source || 'Unknown'} · ${p.triggered_signals?.[0]?.signal?.replace(/_/g,' ') || 'signal'}</div>
+        <div class="crisis-desc">${esc(p.text)}</div>
+        <div class="crisis-time">${relTime(p.timestamp)}</div>
+      </div>
+      <div class="crisis-score ${lvl}">${Math.round(p.crisis_score||0)}</div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:12px;">No crisis signals detected</div>';
+}
+
+function renderPostFeed(filter = null) {
+  const container = document.getElementById('postFeed');
+  let posts = _posts.slice(0, 100);
+  if (filter) posts = posts.filter(p => p.sentiment === filter || p.true_label === filter);
+  container.innerHTML = posts.slice(0, 30).map(p => postHTML(p)).join('');
+}
+
+function filterPosts(sentiment, el) {
+  _currentFilter = sentiment;
+  document.querySelectorAll('#filterBadges .source-badge').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderPostFeed(sentiment);
+}
+
+function filterFeedPosts(sentiment, el) {
+  document.querySelectorAll('#view-feed .source-badge').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const container = document.getElementById('fullPostFeed');
+  let posts = _posts.slice(0, 200);
+  if (sentiment) posts = posts.filter(p => (p.sentiment || p.true_label) === sentiment);
+  container.innerHTML = posts.map(p => postHTML(p)).join('');
+}
+
+function postHTML(p) {
+  const sent = p.sentiment || p.true_label || 'neutral';
+  return `<div class="post-item">
+    <div class="post-meta">
+      <span class="post-source">${p.source||'—'}</span>
+      <span class="sentiment-pill ${sent}">${sent}</span>
+      ${p.topic_name ? `<span class="post-source">${p.topic_name}</span>` : ''}
+    </div>
+    <div class="post-text">${esc(p.text)}</div>
+    <div class="post-time">${relTime(p.timestamp)}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TRENDS VIEW
+═══════════════════════════════════════════════════════════ */
+function renderTrendsView() {
+  const t = _data.trends || {};
+  const trend = t.trend || {};
+  const series = t.time_series || [];
+  const forecast = t.forecast || [];
+  const anomalies = t.anomalies || [];
+
+  document.getElementById('t-kpi-7d').textContent = pct(trend.avg_7d);
+  document.getElementById('t-kpi-30d').textContent = pct(trend.avg_30d);
+  const dirMap = { improving: '↗ Improving', declining: '↘ Declining', stable: '→ Stable' };
+  document.getElementById('t-kpi-dir').textContent = dirMap[trend.direction] || '—';
+  document.getElementById('t-kpi-anomalies').textContent = anomalies.length;
+
+  // Forecast chart
+  destroyChart('forecastChart');
+  const ctx = getCtx('forecastChart');
+  if (!ctx) return;
+
+  const allDates = [...series.map(d => d.date), ...forecast.map(d => d.date)];
+  const actualData = series.map(d => ({ x: d.date, y: (d.sentiment * 100).toFixed(1) }));
+  const forecastData = [
+    { x: series[series.length-1]?.date, y: (series[series.length-1]?.sentiment * 100).toFixed(1) },
+    ...forecast.map(d => ({ x: d.date, y: (d.sentiment * 100).toFixed(1) }))
+  ];
+  const upperBand = [
+    { x: series[series.length-1]?.date, y: null },
+    ...forecast.map(d => ({ x: d.date, y: (d.upper * 100).toFixed(1) }))
+  ];
+  const lowerBand = [
+    { x: series[series.length-1]?.date, y: null },
+    ...forecast.map(d => ({ x: d.date, y: (d.lower * 100).toFixed(1) }))
+  ];
+
+  _charts.forecastChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        { label: 'Sentiment', data: actualData, borderColor: '#5b9cf6', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 },
+        { label: 'Forecast', data: forecastData, borderColor: '#8b5cf6', borderWidth: 2, borderDash: [6,3], fill: false, tension: 0.3, pointRadius: 0 },
+        { label: 'Upper', data: upperBand, borderColor: 'transparent', backgroundColor: 'rgba(139,92,246,0.08)', fill: '+1', pointRadius: 0 },
+        { label: 'Lower', data: lowerBand, borderColor: 'transparent', fill: false, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { type: 'time', time: { unit: 'week' }, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 } } },
+        y: { min: 20, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 }, callback: v => v + '%' } }
+      }
+    }
+  });
+
+  // Volume chart
+  destroyChart('volumeChart');
+  const vCtx = getCtx('volumeChart');
+  _charts.volumeChart = new Chart(vCtx, {
+    type: 'bar',
+    data: {
+      labels: series.map(d => d.date),
+      datasets: [{ label: 'Posts', data: series.map(d => d.volume), backgroundColor: 'rgba(91,156,246,0.4)', borderColor: '#5b9cf6', borderWidth: 1, borderRadius: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'time', time: { unit: 'week' }, grid: { display: false }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 } } }
+      }
+    }
+  });
+
+  // Anomaly list
+  document.getElementById('anomalyList').innerHTML = anomalies.length
+    ? anomalies.map(a => `
+      <div class="crisis-alert ${a.severity || 'medium'}" style="margin-bottom:8px;">
+        <div class="crisis-icon">${a.direction === 'spike' ? '↑' : '↓'}</div>
+        <div class="crisis-content">
+          <div class="crisis-title">${a.date} — ${a.direction === 'spike' ? 'Positive Spike' : 'Sentiment Dip'}</div>
+          <div class="crisis-desc">Z-score: ${a.z_score} · Sentiment: ${pct(a.sentiment)}</div>
+        </div>
+      </div>
+    `).join('')
+    : '<div style="padding:20px;text-align:center;color:var(--text-tertiary);font-size:12px;">No significant anomalies detected in window</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOPICS VIEW
+═══════════════════════════════════════════════════════════ */
+let _selectedTopic = null;
+
+function renderTopicsView() {
+  const topics = _data.topics || [];
+  const total = topics.reduce((s, t) => s + t.post_count, 0);
+  document.getElementById('topicTotalPosts').textContent = `${total} posts`;
+
+  const chipContainer = document.getElementById('topicChips');
+  chipContainer.innerHTML = topics.map((t, i) => {
+    const sentColor = { positive: '#10b981', negative: '#ef4444', neutral: '#4a5568', crisis: '#ef4444' }[t.dominant_sentiment] || '#4a5568';
+    const pct_v = t.post_count / total;
+    return `<div class="topic-chip" id="chip-${i}" onclick="selectTopic(${i})">
+      <div class="topic-chip-name">${t.name}</div>
+      <div class="topic-chip-meta">
+        <span class="topic-count">${t.post_count} posts</span>
+        <div class="topic-sentiment-bar">
+          <div class="topic-sentiment-fill" style="width:${Math.round(pct_v*100*4)}%;background:${sentColor};"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderBubbleChart(topics);
+}
+
+function selectTopic(i) {
+  const topics = _data.topics || [];
+  const t = topics[i];
+  if (!t) return;
+
+  document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`chip-${i}`)?.classList.add('selected');
+
+  const card = document.getElementById('topicDetailCard');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  document.getElementById('topicDetailName').textContent = t.name;
+  document.getElementById('topicDetailCount').textContent = `${t.post_count} posts · ${t.percentage}%`;
+
+  const kwColors = ['#5b9cf6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ef4444','#f472b6','#34d399'];
+  document.getElementById('topicKeywords').innerHTML = t.keywords.map((kw, ki) => `
+    <span style="background:${kwColors[ki%kwColors.length]}18;border:1px solid ${kwColors[ki%kwColors.length]}40;color:${kwColors[ki%kwColors.length]};padding:4px 10px;border-radius:4px;font-size:12px;font-family:var(--font-mono);">${kw}</span>
+  `).join('');
+
+  document.getElementById('topicExamples').innerHTML = (t.examples || []).map(ex => `
+    <div style="padding:8px;background:var(--bg-elevated);border-radius:6px;margin-bottom:6px;font-size:12px;color:var(--text-secondary);line-height:1.5;">${esc(ex.substring(0,140))}${ex.length > 140 ? '…' : ''}</div>
+  `).join('');
+}
+
+function renderBubbleChart(topics) {
+  const svg = d3.select('#topic-bubble-svg');
+  svg.selectAll('*').remove();
+
+  const W = document.getElementById('topic-bubble-svg').parentElement.clientWidth - 40;
+  const H = 340;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+
+  const maxCount = Math.max(...topics.map(t => t.post_count));
+  const r = d3.scaleSqrt().domain([0, maxCount]).range([20, 60]);
+  const sentColors = { positive: '#10b981', negative: '#ef4444', neutral: '#4a5568', crisis: '#ef4444' };
+
+  const simulation = d3.forceSimulation(topics)
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('charge', d3.forceManyBody().strength(5))
+    .force('collision', d3.forceCollide().radius(d => r(d.post_count) + 4))
+    .stop();
+
+  for (let i = 0; i < 120; i++) simulation.tick();
+
+  const node = svg.selectAll('g').data(topics).enter().append('g')
+    .attr('transform', d => `translate(${Math.max(r(d.post_count), Math.min(W-r(d.post_count), d.x||W/2))},${Math.max(r(d.post_count), Math.min(H-r(d.post_count), d.y||H/2))})`)
+    .style('cursor', 'pointer')
+    .on('click', (ev, d) => selectTopic(topics.indexOf(d)));
+
+  node.append('circle')
+    .attr('r', d => r(d.post_count))
+    .attr('fill', d => (sentColors[d.dominant_sentiment] || '#4a5568') + '20')
+    .attr('stroke', d => sentColors[d.dominant_sentiment] || '#4a5568')
+    .attr('stroke-width', 1.5);
+
+  node.append('text')
+    .text(d => d.name.split(' ')[0])
+    .attr('text-anchor', 'middle')
+    .attr('dy', '-0.2em')
+    .attr('fill', '#f0f4ff')
+    .attr('font-family', 'Syne, sans-serif')
+    .attr('font-weight', '700')
+    .attr('font-size', d => Math.max(9, Math.min(13, r(d.post_count) / 4)));
+
+  node.append('text')
+    .text(d => d.post_count + ' posts')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '1.1em')
+    .attr('fill', '#8b9ab4')
+    .attr('font-family', 'DM Mono, monospace')
+    .attr('font-size', d => Math.max(8, Math.min(10, r(d.post_count) / 5)));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CRISIS VIEW
+═══════════════════════════════════════════════════════════ */
+function renderCrisisView() {
+  const c = _data.crisis || {};
+  const alertMap = { low:'🟢 LOW', medium:'🟡 MEDIUM', high:'🟠 HIGH', critical:'🔴 CRITICAL' };
+  document.getElementById('c-overall').textContent = alertMap[c.overall_alert_level] || '🟢 LOW';
+  document.getElementById('c-total').textContent = c.total_crisis_posts || 0;
+  document.getElementById('c-active').textContent = c.active_crises || 0;
+  const topSig = Object.keys(c.signal_frequency || {})[0] || '—';
+  document.getElementById('c-top-signal').textContent = topSig.replace(/_/g,' ');
+
+  document.getElementById('crisisList').innerHTML = (c.top_crisis_posts || []).slice(0,10).map(p => {
+    const lvl = p.alert_level || 'medium';
+    return `<div class="crisis-alert ${lvl}">
+      <div class="crisis-icon">${{critical:'🔴',high:'🟠',medium:'🟡',low:'🟢'}[lvl]||'🟡'}</div>
+      <div class="crisis-content">
+        <div class="crisis-title">${p.source||'Unknown'} · Score ${Math.round(p.crisis_score||0)}</div>
+        <div class="crisis-desc">${esc(p.text)}</div>
+        <div class="crisis-time">${relTime(p.timestamp)} · ${(p.triggered_signals||[]).map(s=>s.signal?.replace(/_/g,' ')).join(', ')}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text-tertiary);">No crisis signals</div>';
+
+  // Signal chart
+  destroyChart('signalChart');
+  const ctx = getCtx('signalChart');
+  const signals = c.signal_frequency || {};
+  const sigLabels = Object.keys(signals).map(k => k.replace(/_/g,' '));
+  const sigValues = Object.values(signals);
+  _charts.signalChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sigLabels,
+      datasets: [{ data: sigValues, backgroundColor: sigValues.map((_, i) => ['#ef4444','#f59e0b','#8b5cf6','#06b6d4','#10b981','#5b9cf6','#f472b6','#34d399'][i%8] + 'aa'), borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5568', font: { family: 'DM Mono', size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: '#8b9ab4', font: { size: 11 } } }
+      }
+    }
+  });
+
+  // Recommended actions
+  const actions = [c.summary || 'Monitor sentiment trends for escalation.'];
+  document.getElementById('crisisActions').innerHTML = actions.map(a => `
+    <div class="crisis-alert medium">
+      <div class="crisis-icon">📋</div>
+      <div class="crisis-content"><div class="crisis-desc">${esc(a)}</div></div>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPETITORS VIEW
+═══════════════════════════════════════════════════════════ */
+function renderCompetitorView() {
+  const comp = _data.competitors || {};
+  const brand = comp.brand || 'TechFlow';
+  const brandSent = comp.brand_sentiment || 0.72;
+  const competitors = comp.competitors || {};
+  const sov = comp.market_share_of_voice || {};
+
+  // Competitor rows
+  const allBrands = [
+    { name: brand, score: brandSent, own: true, trend: '↑' },
+    ...Object.entries(competitors).map(([name, data]) => ({
+      name, score: data.sentiment_score || 0, own: false, trend: { up:'↑', down:'↓', stable:'→' }[data.trend] || '→'
+    }))
+  ].sort((a, b) => b.score - a.score);
+
+  const maxScore = Math.max(...allBrands.map(b => b.score));
+  const brandColors = ['#5b9cf6','#10b981','#f59e0b','#8b5cf6','#06b6d4'];
+
+  document.getElementById('competitorRows').innerHTML = allBrands.map((b, i) => `
+    <div class="competitor-row">
+      <div class="competitor-name ${b.own ? 'own' : ''}">${b.name}</div>
+      <div class="comp-bar-wrap">
+        <div class="comp-bar" style="width:${Math.round(b.score/maxScore*100)}%;background:${brandColors[i%5]};"></div>
+      </div>
+      <div class="comp-score" style="color:${brandColors[i%5]}">${pct(b.score)}</div>
+      <div class="comp-trend">${b.trend}</div>
+    </div>
+  `).join('');
+
+  // SoV chart
+  destroyChart('sovChart');
+  const sovCtx = getCtx('sovChart');
+  const sovLabels = Object.keys(sov);
+  const sovValues = Object.values(sov);
+  if (sovLabels.length && sovCtx) {
+    _charts.sovChart = new Chart(sovCtx, {
+      type: 'doughnut',
+      data: {
+        labels: sovLabels,
+        datasets: [{ data: sovValues, backgroundColor: ['#f59e0b','#8b5cf6','#10b981','#ef4444'], borderWidth: 0, borderRadius: 3, spacing: 2 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        plugins: { legend: { position: 'right', labels: { color: '#8b9ab4', font: { family: 'DM Mono', size: 11 }, boxWidth: 10 } } }
+      }
+    });
+  }
+
+  // Opportunities
+  const opps = comp.opportunities || [];
+  document.getElementById('opportunityList').innerHTML = opps.length
+    ? opps.map(o => `
+      <div class="opportunity-card ${o.priority}">
+        <div class="opp-tag ${o.priority}">${o.priority?.toUpperCase()} PRIORITY · ${o.competitor}</div>
+        <div class="opp-text">${esc(o.opportunity)}</div>
+        <div class="opp-action">→ ${esc(o.action)}</div>
+      </div>
+    `).join('')
+    : '<div style="color:var(--text-tertiary);font-size:12px;padding:20px;">No competitive opportunities identified.</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE ANALYZER
+═══════════════════════════════════════════════════════════ */
+function renderAnalyzerView() {
+  const mode = _data.meta?.model_mode || 'demo';
+  document.getElementById('analyzerModelBadge').textContent = `${mode} mode`;
+
+  const examples = [
+    { label: '😡 Angry customer', text: 'This is completely unacceptable. The platform has been down for 6 hours with no updates from support. I am disputing the charge with my bank.' },
+    { label: '😊 Loyal advocate', text: 'Absolutely incredible platform. The sentiment analysis saved us during a product recall last year. The customer support team is responsive and the dashboard is gorgeous.' },
+    { label: '😐 Mixed review', text: 'The features are solid but the loading times have gotten worse since the last update. Support responded quickly when I raised the issue, so there is that.' },
+    { label: '⚡ Switch signal', text: 'Been using RivalOne for 2 years but seriously considering switching. Their pricing jumped 40% and the API documentation is outdated. Evaluating alternatives this quarter.' },
+  ];
+
+  document.getElementById('exampleList').innerHTML = examples.map(ex => `
+    <div class="post-item" onclick="setAnalyzerText(${JSON.stringify(ex.text)})" style="cursor:pointer;">
+      <div class="post-meta"><span class="post-source">${ex.label}</span></div>
+      <div class="post-text">${esc(ex.text.substring(0,120))}…</div>
+    </div>
+  `).join('');
+}
+
+function setAnalyzerText(text) {
+  document.getElementById('analyzerInput').value = text;
+  document.getElementById('analyzerResult').classList.remove('visible');
+}
+
+async function runAnalysis() {
+  const text = document.getElementById('analyzerInput').value.trim();
+  if (!text) return;
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.textContent = '⌛ Analyzing…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, include_aspects: true, include_crisis: true }),
+    });
+    const data = await res.json();
+    renderAnalysisResult(data);
+  } catch {
+    // Demo fallback
+    renderAnalysisResult(getDemoAnalysis(text));
+  } finally {
+    btn.textContent = '⚡ Analyze';
+    btn.disabled = false;
+  }
+}
+
+function renderAnalysisResult(data) {
+  const sent = data.sentiment?.label || 'neutral';
+  const conf = data.sentiment?.confidence || 0.75;
+  const crisis = data.crisis || {};
+
+  const sentColors = { positive: '#10b981', negative: '#ef4444', neutral: '#8b9ab4', crisis: '#ef4444' };
+  const badge = document.getElementById('resultBadge');
+  badge.textContent = sent.toUpperCase();
+  badge.style.background = (sentColors[sent] || '#4a5568') + '20';
+  badge.style.color = sentColors[sent] || '#8b9ab4';
+  badge.style.border = `1px solid ${(sentColors[sent] || '#4a5568')}40`;
+
+  document.getElementById('resultConf').textContent = `${Math.round(conf * 100)}% confidence · ${data.sentiment?.mode || 'model'}`;
+
+  const crisisBox = document.getElementById('crisisResultBox');
+  if (crisis.score > 0) {
+    crisisBox.innerHTML = `<div class="crisis-alert ${crisis.alert_level || 'low'}" style="margin-top:8px;">
+      <div class="crisis-icon">${{critical:'🔴',high:'🟠',medium:'🟡',low:'🟢'}[crisis.alert_level]||'🟢'}</div>
+      <div class="crisis-content">
+        <div class="crisis-title">Crisis Score: ${crisis.score} · ${(crisis.alert_level||'low').toUpperCase()}</div>
+        <div class="crisis-desc">${esc(crisis.recommended_action || '')}</div>
+      </div>
+    </div>`;
+  } else crisisBox.innerHTML = '';
+
+  const aspects = data.aspects || {};
+  const aspectEl = document.getElementById('aspectGrid');
+  if (Object.keys(aspects).length) {
+    const sentColor = s => ({ positive: '#10b981', negative: '#ef4444', neutral: '#8b9ab4' }[s] || '#8b9ab4');
+    aspectEl.innerHTML = Object.entries(aspects).map(([name, info]) => `
+      <div class="aspect-item">
+        <div class="aspect-name">${name}</div>
+        <div class="aspect-sentiment" style="color:${sentColor(info.sentiment)}">${info.sentiment}</div>
+        <div style="font-size:10px;color:var(--text-tertiary);margin-top:2px;font-family:var(--font-mono);">${info.keywords?.join(', ')}</div>
+      </div>
+    `).join('');
+  } else {
+    aspectEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-tertiary);font-size:12px;">No specific aspects detected</div>';
+  }
+
+  document.getElementById('analyzerResult').classList.add('visible');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════════ */
+function pct(v) { return Math.round((v||0) * 100) + '%'; }
+function fmt(n) { return n >= 1000 ? (n/1000).toFixed(1) + 'K' : String(n||0); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function relTime(ts) {
+  if (!ts) return '—';
+  const diff = (Date.now() - new Date(ts).getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DEMO DATA (when backend offline)
+═══════════════════════════════════════════════════════════ */
+function getDemoData() {
+  const series = Array.from({length:90}, (_,i) => {
+    const date = new Date(Date.now() - (89-i)*86400000);
+    const s = 0.62 + Math.random()*0.12 + (i > 50 ? 0.05 : 0) + (i >= 42 && i <= 45 ? -0.22 : 0);
+    return { date: date.toISOString().slice(0,10), sentiment: Math.max(0.1, Math.min(0.99, s)), volume: 80+Math.floor(Math.random()*60), positive: 0, negative: 0 };
+  });
+  const forecast = Array.from({length:14}, (_,i) => {
+    const date = new Date(Date.now() + (i+1)*86400000);
+    const s = 0.74 + i*0.003 + (Math.random()-0.5)*0.04;
+    return { date: date.toISOString().slice(0,10), sentiment: Math.min(0.99, s), lower: s-0.07, upper: s+0.07 };
+  });
+  return {
+    meta: { model_mode: 'demo', total_posts: 406 },
+    summary: { overall_sentiment: 0.72, avg_7d_sentiment: 0.74, avg_30d_sentiment: 0.70, delta: 0.04, trend_direction: 'improving', total_volume: 11820, avg_daily_volume: 131.3, positive_count: 248, negative_count: 84, neutral_count: 74, positive_pct: 61.1, negative_pct: 20.7, nps_estimate: 40.4, crisis_alert: 'medium', volume_trend: 'growing' },
+    topics: [
+      { id:0, name:'Performance & Speed', keywords:['slow','load','speed','latency','fast'], post_count:82, percentage:20.2, dominant_sentiment:'negative', sentiment_distribution:{positive:20,negative:45,neutral:17}, examples:['Loading times are unacceptable. 8 seconds on every refresh.','The API response time has degraded significantly post-update.'] },
+      { id:1, name:'Customer Support', keywords:['support','response','team','help','ticket'], post_count:74, percentage:18.2, dominant_sentiment:'positive', sentiment_distribution:{positive:48,negative:14,neutral:12}, examples:['Support responded within minutes. Rare level of care.','Ghosted us for 3 days during a critical monitoring window.'] },
+      { id:2, name:'Pricing & Billing', keywords:['price','billing','cost','subscription','fee'], post_count:63, percentage:15.5, dominant_sentiment:'negative', sentiment_distribution:{positive:12,negative:38,neutral:13}, examples:['Pricing jumped 40% at renewal with no notice.','Excellent value for the pricing tier.'] },
+      { id:3, name:'UI & Design', keywords:['dashboard','interface','design','ui','navigation'], post_count:58, percentage:14.3, dominant_sentiment:'positive', sentiment_distribution:{positive:42,negative:8,neutral:8}, examples:['Dashboard is gorgeous. My team actually looks forward to weekly reviews.','Too many clicks to access advanced features.'] },
+      { id:4, name:'Features & Integrations', keywords:['feature','api','integration','export','report'], post_count:51, percentage:12.6, dominant_sentiment:'positive', sentiment_distribution:{positive:35,negative:10,neutral:6}, examples:['The competitor tracking module is a game-changer.','Integrations are shallow. No bi-directional actions.'] },
+      { id:5, name:'Data Quality & Accuracy', keywords:['accuracy','data','model','insight','reliable'], post_count:42, percentage:10.3, dominant_sentiment:'neutral', sentiment_distribution:{positive:18,negative:16,neutral:8}, examples:['BERT-powered analysis significantly more accurate than alternatives.','Trend forecasting was way off during product launch.'] },
+      { id:6, name:'Onboarding & Docs', keywords:['setup','onboard','documentation','guide','install'], post_count:36, percentage:8.9, dominant_sentiment:'positive', sentiment_distribution:{positive:22,negative:8,neutral:6}, examples:['Onboarding documentation is detailed and well-written.','Took us a week to get basic pipelines running.'] },
+    ],
+    trends: { time_series: series, forecast, trend: { direction:'improving', slope:0.00082, current_sentiment:0.72, avg_7d:0.74, avg_30d:0.70, delta_7d_vs_30d:0.04, volume_trend:'growing', total_volume:11820, avg_daily_volume:131.3 }, anomalies: [{ date: series[45]?.date, sentiment:0.48, z_score:-2.3, direction:'dip', severity:'high' }] },
+    crisis: { overall_alert_level:'medium', total_crisis_posts:18, active_crises:3, top_crisis_posts:[
+      { id:'c0', text:'ZERO stars. Complete system outage for 6 hours with no status page updates.', source:'Twitter', alert_level:'high', crisis_score:12.5, timestamp:new Date(Date.now()-7*86400000).toISOString(), triggered_signals:[{signal:'service_failure'},{signal:'outrage'}] },
+      { id:'c1', text:'They charged me twice and the billing team has not responded in 4 days. Disputing with my bank.', source:'Trustpilot', alert_level:'high', crisis_score:10.0, timestamp:new Date(Date.now()-3*86400000).toISOString(), triggered_signals:[{signal:'financial'},{signal:'exodus_intent'}] },
+      { id:'c2', text:'Data breach. My private information appeared in another user\'s dashboard report.', source:'Reddit', alert_level:'critical', crisis_score:10.0, timestamp:new Date(Date.now()-8*86400000).toISOString(), triggered_signals:[{signal:'data_breach'}] },
+    ], signal_frequency:{ service_failure:8, financial:6, outrage:5, exodus_intent:4, mass_complaint:3, viral_threat:2 }, summary:'HIGH ALERT: Elevated negative signals around service failure. Assign response team immediately.' },
+    competitors: { brand:'TechFlow', brand_sentiment:0.72, competitors:{ RivalOne:{ sentiment_score:0.61, mention_count:28, trend:'down', sentiment_distribution:{positive:17,negative:8,neutral:3} }, CompeteX:{ sentiment_score:0.68, mention_count:22, trend:'stable', sentiment_distribution:{positive:15,negative:5,neutral:2} }, AltStream:{ sentiment_score:0.55, mention_count:14, trend:'down', sentiment_distribution:{positive:8,negative:5,neutral:1} } }, market_share_of_voice:{ RivalOne:6.9, CompeteX:5.4, AltStream:3.4 }, opportunities:[{ competitor:'RivalOne', opportunity:'RivalOne shows declining sentiment (61%). Users actively looking for alternatives.', action:'Create targeted comparison landing page highlighting response time and accuracy advantages.', priority:'high' },{ competitor:'AltStream', opportunity:'AltStream weak at 55% positive sentiment. Multiple exodus signals detected.', action:'Target AltStream users with migration offer and free data import tool.', priority:'high' },{ competitor:'CompeteX', opportunity:'Users compare CompeteX on pricing dimension (4 mentions).', action:'Strengthen pricing transparency and value messaging in top-of-funnel content.', priority:'medium' }] },
+  };
+}
+
+function getDemoPosts() {
+  const sentiments = ['positive','positive','positive','negative','neutral','crisis'];
+  const sources = ['Twitter','Reddit','G2','Trustpilot','ProductHunt','LinkedIn'];
+  const texts = [
+    'Absolutely love the new dashboard update — real-time insights have changed how our team operates.',
+    'The sentiment analysis caught a product issue before it became a PR crisis. Incredible.',
+    'Setup was smooth. Was up and running in under an hour. Onboarding flow is excellent.',
+    'The export feature crashes with datasets over 10,000 rows. Very frustrating.',
+    'Pricing jumped 40% at renewal with no notice. This kind of thing destroys trust.',
+    'Switched from a competitor. Migration took longer than expected but worth it.',
+    'ZERO stars. System outage for 6 hours with no status page updates. Unacceptable.',
+    'Customer support responded within minutes. Rare to see this level of care.',
+    'The topic clustering feature alone is worth the subscription price.',
+    'Loading times are unacceptable. Dashboard takes 8 seconds to render.',
+    'Mobile app works flawlessly. Can monitor brand health on the go.',
+    'Documentation is outdated. Several API endpoints described don\'t match behavior.',
+    'The BERT-powered sentiment analysis is significantly more accurate than alternatives.',
+    'Too many false positives in crisis detection. Alert fatigue is real.',
+    'The competitor tracking module is a game-changer for our strategy team.',
+    'Data breach. My private information appeared in another user\'s dashboard.',
+  ];
+  return Array.from({length:200}, (_,i) => ({
+    id: `demo_${i}`,
+    text: texts[i % texts.length],
+    sentiment: sentiments[i % sentiments.length],
+    true_label: sentiments[i % sentiments.length],
+    source: sources[i % sources.length],
+    timestamp: new Date(Date.now() - Math.random()*90*86400000).toISOString(),
+    likes: Math.floor(Math.random()*200),
+    topic_name: ['Performance & Speed','Customer Support','Pricing & Billing','UI & Design','Features & Integrations'][i%5],
+  }));
+}
+
+function getDemoAnalysis(text) {
+  const neg = ['slow','crash','terrible','awful','hate','scam','breach','unacceptable'].some(w => text.toLowerCase().includes(w));
+  const pos = ['love','great','excellent','amazing','best','perfect','incredible'].some(w => text.toLowerCase().includes(w));
+  const label = neg ? 'negative' : pos ? 'positive' : 'neutral';
+  const aspects = {};
+  if (text.toLowerCase().includes('slow') || text.toLowerCase().includes('load')) aspects['Performance'] = { mentioned:true, sentiment:'negative', keywords:['slow'], score:0.82 };
+  if (text.toLowerCase().includes('support') || text.toLowerCase().includes('team')) aspects['Support'] = { mentioned:true, sentiment: pos ? 'positive' : 'negative', keywords:['support'], score:0.75 };
+  if (text.toLowerCase().includes('price') || text.toLowerCase().includes('billing')) aspects['Pricing'] = { mentioned:true, sentiment:'negative', keywords:['pricing'], score:0.79 };
+  const crisisScore = (text.toLowerCase().includes('breach') || text.toLowerCase().includes('scam') || text.toLowerCase().includes('lawsuit')) ? 12 : (neg ? 4 : 0);
+  return { sentiment:{ label, confidence:0.82, mode:'demo' }, aspects, crisis:{ score:crisisScore, alert_level: crisisScore>10?'high':crisisScore>4?'medium':'low', recommended_action: crisisScore>10 ? 'Escalate to communications team.' : 'Monitor for escalation.', is_crisis: crisisScore > 8 } };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>
